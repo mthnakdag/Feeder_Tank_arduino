@@ -1,0 +1,133 @@
+#!/bin/bash
+#
+#  curl commands to reload the data from the previous tutorial
+#
+#
+
+set -e
+
+
+curl () {
+  docker run --network fiware_default --rm appropriate/curl -s \
+    "$@"
+  printf "."
+}
+
+echo -e "⏳ Waiting for \033[1;34mOrion\033[0m to be available\n"
+while [ `docker run --network fiware_default --rm appropriate/curl -s -o /dev/null -w %{http_code} 'http://orion:1026/version'` -eq 000 ]
+do 
+  echo -e "Context Broker HTTP state: " `curl -s -o /dev/null -w %{http_code} 'http://orion:1026/version'` " (waiting for 200)"
+  sleep 1
+done
+printf "⏳ Loading context data "
+
+#
+# Create four Motor Entities 
+#
+curl -X POST \
+  'http://orion:1026/v2/op/update' \
+  -H 'Content-Type: application/json' \
+  -g -d '{
+  "actionType": "append",
+  "entities": [
+  	{
+  		"id":"urn:ngsi-ld:Motor:unit001","type":"Motor",
+  		"name":{"type":"Text","value":"Back-Food Unit"},
+ 		"functinalities":{"type":"Text","value":"Communicate App"}
+  	},
+  	{
+  		"id":"urn:ngsi-ld:Motor:unit002","type":"Motor",
+  		"name":{"type":"Text","value":"Back-Water Unit"},
+ 		"functinalities":{"type":"Text","value":"Communicate App"}
+  	},
+  	{
+  		"id":"urn:ngsi-ld:Motor:unit003","type":"Motor",
+  		"name":{"type":"Text","value":"Front-Food Unit"},
+ 		"functinalities":{"type":"Text","value":"Automatically"}
+  	},
+  	{
+  		"id":"urn:ngsi-ld:Motor:unit004","type":"Motor",
+  		"name":{"type":"Text","value":"Front-Water Unit"},
+ 		"functinalities":{"type":"Text","value":"Automatically"}
+  	}
+  ]
+}'
+
+#
+# Create four Sensor Entities 
+#
+curl -X POST \
+  'http://orion:1026/v2/op/update' \
+  -H 'Content-Type: application/json' \
+  -g -d '{
+  "actionType": "append",
+  "entities": [
+  	{
+  		"id":"urn:ngsi-ld:Sensor:unit001","type":"Sensor",
+  		"name":{"type":"Text","value":"Back-Food Unit"},
+		"distance":{"type":"Integer","value":0},
+ 		"functinalities":{"type":"Text","value":"Communicate App"}
+  	},
+  	{
+  		"id":"urn:ngsi-ld:Sensor:unit002","type":"Sensor",
+  		"name":{"type":"Text","value":"Back-Water Unit"},
+		"distance":{"type":"Integer","value":0},
+ 		"functinalities":{"type":"Text","value":"Communicate App"}
+  	},
+  	{
+  		"id":"urn:ngsi-ld:Sensor:unit003","type":"Sensor",
+  		"name":{"type":"Text","value":"Front-Food Unit"},
+		"distance":{"type":"Integer","value":0},
+ 		"functinalities":{"type":"Text","value":"Automatically"}
+  	},
+  	{
+  		"id":"urn:ngsi-ld:Sensor:unit004","type":"Sensor",
+  		"name":{"type":"Text","value":"Back-Food Unit"},
+		"distance":{"type":"Integer","value":0},
+ 		"functinalities":{"type":"Text","value":"Automatically"}
+  	}
+  ]
+}'
+
+#
+# Connect Sensors and Motors 
+#
+curl -X POST \
+  'http://orion:1026/v2/op/update' \
+  -H 'Content-Type: application/json' \
+  -g -d '{
+  "actionType": "append",
+  "entities": [
+  	{
+  		"id":"urn:ngsi-ld:Motor:unit001","type":"Motor",
+  		"refSensor":{
+			"type": "RelationShip",
+			"value": "urn:ngsi:ld:Sensor:unit001"		
+		}
+  	},
+  	{
+  		"id":"urn:ngsi-ld:Motor:unit002","type":"Motor",
+  		"refSensor":{
+			"type": "RelationShip",
+			"value": "urn:ngsi:ld:Sensor:unit002"		
+		}
+  	},
+  	{
+  		"id":"urn:ngsi-ld:Motor:unit003","type":"Motor",
+  		"refSensor":{
+			"type": "RelationShip",
+			"value": "urn:ngsi:ld:Sensor:unit003"		
+		}
+  	},
+  	{
+  		"id":"urn:ngsi-ld:Motor:unit004","type":"Motor",
+  		"refSensor":{
+			"type": "RelationShip",
+			"value": "urn:ngsi:ld:Sensor:unit004"		
+		}
+  	}
+  ]
+}'
+ 
+
+echo -e " \033[1;32mdone\033[0m"
